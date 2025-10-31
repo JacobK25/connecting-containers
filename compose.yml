@@ -1,0 +1,57 @@
+services:
+  frontend:
+    build:
+      dockerfile: Dockerfile
+      context: frontend/
+
+    tty: true
+    stdin_open: true
+    networks:
+      - to_backend
+    depends_on:
+      backend:
+        condition: service_started
+
+  backend:
+    build:
+      dockerfile: Dockerfile
+      context: backend/
+    networks:
+      - to_backend
+      - to_database
+    ports:
+      - "8000:8000"
+    depends_on:
+      database:
+        condition: service_started
+    attach: false
+
+  database:
+    build:
+      dockerfile: Dockerfile
+      context: database/
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: my_db
+      POSTGRES_PASSWORD: mypassword
+
+    volumes:
+      - ./dataset:/docker-entrypoint-initdb.d
+      - db-data:/var/lib/postgresql
+    ports: 
+      - 5431:5432
+
+    networks:
+      - to_database
+    attach: false
+  
+
+networks:
+  to_backend:
+    driver: bridge
+
+  to_database:
+    driver: bridge
+
+volumes:
+  db-data:
